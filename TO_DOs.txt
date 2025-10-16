@@ -15,4 +15,5 @@ Sbilanciamento classi -> undersampling dei sani giustificando con distribuzione 
 Normalizzazione z score
     ! sembra già fatta 
 Guardare outlier -> chat come meglio trattare
-Feature engineering come applicare 
+controllare rumore dei dati 
+Feature processing come applicare 
