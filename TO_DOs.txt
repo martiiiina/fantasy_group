@@ -1,4 +1,10 @@
 TO DOs
+Eliminazione NaN -> settare soglia 40% per drop 
+Per mantenere -> sostituire NaN con media 
+Guardare correlazione -> soglia 0.9 modulo
+*controllare codice da chat 
+
+controllare distribuzioni: controllare metriche Q1-media-Q3 prima e dopo undersampling
 Eliminazione NaN -> settare soglia 40% per drop ✅
 Per mantenere -> sostituire NaN con media ✅
 Guardare correlazione -> soglia 0.9 modulo ✅
