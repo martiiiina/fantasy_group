@@ -1,43 +1,6 @@
 import numpy as np
 from helpers import batch_iter
 
-
-"""Compute loss"""
-
-def compute_loss(y, tx, w):
-    """Calculate the loss using either MSE or MAE.
-
-    Args:
-        y: shape=(N, )
-        tx: shape=(N,2)
-        w: shape=(2,). The vector of model parameters.
-
-    Returns:
-        the value of the loss (a scalar), corresponding to the input parameters w.
-    """
-    # compute loss by MSE
-    N = y.shape[0]
-    loss = 1/(2*N) * np.sum((y-np.dot(tx,w))**2)
-    return loss
-
-"""Gradient Descent"""
-
-def compute_gradient(y, tx, w):
-    """Computes the gradient at w.
-
-    Args:
-        y: shape=(N, )
-        tx: shape=(N,2)
-        w: shape=(2, ). The vector of model parameters.
-
-    Returns:
-        An array of shape (2, ) (same shape as w), containing the gradient of the loss at w.
-    """
-    e = y - np.dot(tx,w)
-    gradient = - 1/len(y) * (np.dot(tx.T,e))
-    return gradient
-
-
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """The Gradient Descent (GD) algorithm.
 
@@ -52,47 +15,17 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         losses: a list of length max_iters containing the loss value (scalar) for each iteration of GD
         ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of GD
     """
-    # Define parameters to store w and loss
-    ws = [initial_w]
-    losses = []
     w = initial_w
     for n_iter in range(max_iters):
         # compute gradient and loss
-        g = compute_gradient(y, tx, w)
-        loss = compute_loss(y,tx,w)
-        # update w by gradient
+        e = y - np.dot(tx,w)
+        g = - 1/len(y) * (np.dot(tx.T,e))
+        N = y.shape[0]
+        loss = 1/(2*N) * np.sum((y-np.dot(tx,w))**2)
+        # update w 
         w=w-gamma*g
-        # store w and loss
-        ws.append(w)
-        losses.append(loss)
-        print(
-            "GD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]
-            )
-        )
 
-    return losses, ws
-
-"""Stochastic Gradient Descent"""
-
-
-def compute_stoch_gradient(y, tx, w):
-    """Compute a stochastic gradient at w from just few examples n and their corresponding y_n labels.
-
-    Args:
-        y: shape=(N, )
-        tx: shape=(N,2)
-        w: shape=(2, ). The vector of model parameters.
-
-    Returns:
-        An array of shape (2, ) (same shape as w), containing the stochastic gradient of the loss at w.
-    """
-    # implement stochastic gradient computation. It's the same as the usual gradient.
-    loss_n= (y-np.dot(tx,w))**2
-    e = y - np.dot(tx,w)
-    gradient = - 2 * (np.dot(tx.T,e))
-    return gradient, loss_n 
-
+    return w, loss
 
 def mean_squared_error_sgd(y, tx, initial_w, batch_size, max_iters, gamma):
     """The Stochastic Gradient Descent algorithm (SGD).
@@ -109,27 +42,16 @@ def mean_squared_error_sgd(y, tx, initial_w, batch_size, max_iters, gamma):
         losses: a list of length max_iters containing the loss value (scalar) for each iteration of SGD
         ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of SGD
     """
-
-    # Define parameters to store w and loss
-    ws = [initial_w]
-    losses = []
     w = initial_w
-
     for n_iter in range(max_iters):
         # implement stochastic gradient descent.
         for batch_y, batch_tx in batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):            #batch_size = distance between batch elements ; num_batches = number of elements in the batch
-            stoch_grad, loss_grad = compute_stoch_gradient(batch_y, batch_tx, w)
+            loss= (batch_y-np.dot(batch_tx,w))**2
+            e = batch_y - np.dot(batch_tx,w)
+            stoch_grad = - 2 * (np.dot(batch_tx.T,e))
 
         w=w-gamma*stoch_grad
-
-        ws.append(w)
-        losses.append(loss_grad)
-        print(
-            "SGD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss_grad, w0=w[0], w1=w[1]
-            )
-        )
-    return losses, ws
+    return w, loss
 
 def least_squares(y, tx):
     """Calculate the least squares solution.
@@ -181,4 +103,78 @@ def ridge_regression(y, tx, lambda_):
 
     e = y-tx@w
     mse = 1/(2*N)*e.T@e
-    return w
+    return w, mse
+
+def sigmoid(t):
+    """apply sigmoid function on t.
+
+    Args:
+        t: scalar or numpy array
+
+    Returns:
+        scalar or numpy array
+    """
+    sigma = 1 / (1+np.exp(-t))
+    return sigma
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    """
+    Do one step of gradient descent using logistic regression. Return the loss and the updated w.
+
+    Args:
+        y:  shape=(N, 1)
+        tx: shape=(N, D)
+        w:  shape=(D, 1)
+        gamma: float
+
+    Returns:
+        loss: scalar number
+        w: shape=(D, 1)
+    """
+    N = y.shape[0]
+    w=initial_w
+    losses=[]
+    threshold=1e-8
+
+    for iter in range(max_iters):
+        loss = -(1/N) * np.sum(y * np.log(sigmoid(tx@w)) + (1-y) * np.log(1-sigmoid(tx@w)))
+        loss=loss.item()
+        losses.append(loss)
+        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+            break
+        grad = (1/N) * tx.T@(sigmoid(tx@w)-y) 
+        w = w - gamma*grad
+
+    return w, loss
+
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+    """Do gradient descent, using the penalized logistic regression.
+    Return the loss and updated w.
+
+    Args:
+        y:  shape=(N, 1)
+        tx: shape=(N, D)
+        w:  shape=(D, 1)
+        gamma: scalar
+        lambda_: scalar
+        max_iters: scalar
+
+    Returns:
+        loss: scalar number
+        w: shape=(D, 1)
+    """
+    N = y.shape[0]
+    w=initial_w
+    threshold = 1e-8
+    losses = []
+
+    for iter in range(max_iters):
+        # get loss and update w.
+        loss=-(1/N) * np.sum(y * np.log(sigmoid(tx@w)) + (1-y) * np.log(1-sigmoid(tx@w)))
+        loss=loss.item()
+        grad = (1/N) * tx.T@(sigmoid(tx@w)-y) + 2 * lambda_ * w
+        w=w-gamma*grad
+        losses.append(loss)
+        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+            break
+    return w, loss
