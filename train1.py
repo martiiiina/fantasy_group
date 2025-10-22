@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import csv
 from common import batch_iter, sigmoid
-from mie import build_k_indices, cross_validation, logistic_loss
+from mie import build_k_indices, cross_validation, logistic_loss, train_val_split, subsample_class
+from performance import accuracy, precision, recall, f1_score
+
 
 ### LOAD DATA
 
@@ -207,3 +209,47 @@ plt.xlabel("Valore")
 plt.ylabel("Frequenza")
 plt.show()
 
+### SPLIT AND SUBSAMPLING
+
+# Split
+X_train, y_train, X_val, y_val = train_val_split(x_train_norm, y_train, val_ratio=0.2)
+
+# Subsampling
+X_bal, y_bal = subsample_class(X_train, y_train, target_ratio=1.0)
+
+
+### CROSS-VALIDATION
+k_fold=5
+k_indices=build_k_indices(y_bal, k_fold, seed=42)
+loss_val=[]
+loss_tr=[]
+ws=[]
+initial_w = np.zeros((X_bal.shape[1], 1))
+
+for k in range(k_fold):
+    w, loss_tr_tmp=cross_validation(y_bal, X_bal, k_indices, k, initial_w, max_iters=1000, gamma=0.1, lambda_=1e-4)
+    loss_tr.append(loss_tr_tmp)
+    ws.append(w)
+    loss_val_tmp=logistic_loss(y_val, X_val, w)
+    loss_val.append(loss_val_tmp)
+    
+w_best=np.mean(ws, axis=0)
+
+
+### INFERENCE
+
+y_pred_prob = sigmoid(x_test_norm @ w_best)
+y_pred = np.where(y_pred_prob >= 0.5, 1, -1)
+
+create_csv_submission(test_ids, y_pred, 'Reg_Logistic_1')
+
+### METRICS ON VALIDATION
+
+y_val_pred_prob = sigmoid(X_val @ w_best)
+y_val_pred = np.where(y_val_pred_prob >= 0.5, 1, -1)
+
+acc = accuracy(y_val, y_val_pred)
+f1 = f1_score(y_val, y_val_pred)
+
+print(f"Validation Accuracy: {acc:.4f}")
+print(f"Validation F1-score: {f1:.4f}")

@@ -62,3 +62,39 @@ def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
     w, loss_tr=reg_logistic_regression(y_tr, x_tr, lambda_, initial_w, max_iters, gamma)
 
     return w, loss_tr
+
+def train_val_split(x, y, val_ratio=0.2, seed=42):
+    np.random.seed(seed)
+    n_samples = x.shape[0]
+    indices = np.random.permutation(n_samples)
+    
+    split_idx = int(n_samples * (1 - val_ratio))
+    train_idx = indices[:split_idx]
+    val_idx = indices[split_idx:]
+    
+    return x[train_idx], y[train_idx], x[val_idx], y[val_idx]
+
+def subsample_class(x, y, majority_class=-1, target_ratio=1.0, seed=42):
+    np.random.seed(seed)
+    majority_mask = (y == majority_class)
+    minority_mask = ~majority_mask
+
+    x_majority = x[majority_mask]
+    y_majority = y[majority_mask]
+    x_minority = x[minority_mask]
+    y_minority = y[minority_mask]
+    
+    n_minority = x_minority.shape[0]
+    n_majority_sample = int(n_minority * target_ratio)
+
+    indices = np.random.choice(x_majority.shape[0], n_majority_sample, replace=False) # selection with no repetition
+    
+    x_majority_sampled = x_majority[indices]
+    y_majority_sampled = y_majority[indices]
+    
+    x_balanced = np.vstack((x_majority_sampled, x_minority))
+    y_balanced = np.concatenate((y_majority_sampled, y_minority))
+    
+    # Shuffle on x and y
+    perm = np.random.permutation(x_balanced.shape[0])
+    return x_balanced[perm], y_balanced[perm]
