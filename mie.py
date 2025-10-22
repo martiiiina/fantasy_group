@@ -27,53 +27,6 @@ def logistic_loss(y, tx, w):
     loss=np.squeeze(loss).item()
     return loss
 
-def cross_validation(y, x, y_val, x_val, k_indices, k, initial_w, max_iters, gamma, lambda_):
-    """return the loss of ridge regression for a fold corresponding to k_indices
-
-    Args:
-        y:          shape=(N,)
-        x:          shape=(N,)
-        k_indices:  2D array returned by build_k_indices()
-        k:          scalar, the k-th fold (N.B.: not to confused with k_fold which is the fold nums)
-        lambda_:    scalar, cf. ridge_regression()
-        degree:     scalar, cf. build_poly()
-
-    Returns:
-        train and test root mean square errors rmse = sqrt(2 mse)
-    """
-    # IDEA: at every k-th iteration I select the k-th row of k_indices as the test indices,
-    # and all the other rows as the training indices
-
-    te_indice = k_indices[k]
-    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]      # list from 0 to K_fold, == current k, list of zeros and one 1 for current k, inverted with tilde
-    
-    # N.B. passing a boolean to k_indices like T T F T T, slicing of rows of k_indices with index True
-
-    tr_indice = tr_indice.reshape(-1)   # trasforms tr_indice from matrix to 1D
-
-    y_te = y[te_indice]
-    y_tr = y[tr_indice]
-    x_te = x[te_indice, :]
-    x_tr = x[tr_indice, :]
-    #print("Shape after split x_tr: ", x_tr.shape)
-    #print("Shape after split y_tr: ", y_tr.shape)
-
-
-    w, loss_tr, loss_val = reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma)
-
-    return w, loss_tr, loss_val
-
-def train_val_split(x, y, val_ratio=0.2, seed=42):
-    np.random.seed(seed)
-    n_samples = x.shape[0]
-    indices = np.random.permutation(n_samples)
-    
-    split_idx = int(n_samples * (1 - val_ratio))
-    train_idx = indices[:split_idx]
-    val_idx = indices[split_idx:]
-    
-    return x[train_idx], y[train_idx], x[val_idx], y[val_idx]
-
 def subsample_class(x, y, majority_class=-1, target_ratio=1.0, seed=42):
     np.random.seed(seed)
     majority_mask = (y == majority_class)
@@ -98,3 +51,53 @@ def subsample_class(x, y, majority_class=-1, target_ratio=1.0, seed=42):
     # Shuffle on x and y
     perm = np.random.permutation(x_balanced.shape[0])
     return x_balanced[perm], y_balanced[perm]
+
+def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
+    """return the loss of ridge regression for a fold corresponding to k_indices
+
+    Args:
+        y:          shape=(N,)
+        x:          shape=(N,)
+        k_indices:  2D array returned by build_k_indices()
+        k:          scalar, the k-th fold (N.B.: not to confused with k_fold which is the fold nums)
+        lambda_:    scalar, cf. ridge_regression()
+        degree:     scalar, cf. build_poly()
+
+    Returns:
+        train and test root mean square errors rmse = sqrt(2 mse)
+    """
+    # IDEA: at every k-th iteration I select the k-th row of k_indices as the test indices,
+    # and all the other rows as the training indices
+
+    val_indice = k_indices[k]
+    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]      # list from 0 to K_fold, == current k, list of zeros and one 1 for current k, inverted with tilde
+    
+    # N.B. passing a boolean to k_indices like T T F T T, slicing of rows of k_indices with index True
+
+    tr_indice = tr_indice.reshape(-1)   # trasforms tr_indice from matrix to 1D
+
+
+    #print("Shape after split x_tr: ", x_tr.shape)
+    #print("Shape after split y_tr: ", y_tr.shape)
+
+    y_val = y[val_indice]
+    y_tr = y[tr_indice]
+    x_val = x[val_indice, :]
+    x_tr = x[tr_indice, :]
+
+
+    w, loss_tr, loss_val = reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma)
+
+    return w, loss_tr, loss_val
+
+def train_val_split(x, y, val_ratio=0.2, seed=42):
+    np.random.seed(seed)
+    n_samples = x.shape[0]
+    indices = np.random.permutation(n_samples)
+    
+    split_idx = int(n_samples * (1 - val_ratio))
+    train_idx = indices[:split_idx]
+    val_idx = indices[split_idx:]
+    
+    return x[train_idx], y[train_idx], x[val_idx], y[val_idx]
+

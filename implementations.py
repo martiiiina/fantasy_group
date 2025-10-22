@@ -183,7 +183,6 @@ def reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_it
         if len(val_losses) > 1 and np.abs(val_losses[-1] - val_losses[-2]) < threshold:
             break
 
-
         grad = (1/N) * x_tr.T@(sig-y_tr) + 2 * lambda_ * w
         w=w-gamma*grad
         
