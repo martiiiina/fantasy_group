@@ -1,5 +1,5 @@
 import numpy as np
-from helpers import batch_iter
+from common import batch_iter, sigmoid
 
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """The Gradient Descent (GD) algorithm.
@@ -105,21 +105,9 @@ def ridge_regression(y, tx, lambda_):
     mse = 1/(2*N)*e.T@e
     return w, mse
 
-def sigmoid(t):
-    """apply sigmoid function on t.
-
-    Args:
-        t: scalar or numpy array
-
-    Returns:
-        scalar or numpy array
-    """
-    sigma = 1 / (1+np.exp(-t))
-    return sigma
-
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """
-    Do one step of gradient descent using logistic regression. Return the loss and the updated w.
+    Do gradient descent using logistic regression. Return the final loss and the updated w.
 
     Args:
         y:  shape=(N, 1)
@@ -137,13 +125,16 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     threshold=1e-8
 
     for iter in range(max_iters):
-        loss = -(1/N) * np.sum(y * np.log(sigmoid(tx@w)) + (1-y) * np.log(1-sigmoid(tx@w)))
-        loss=loss.item()
+        sig = sigmoid(tx @ w)
+        loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
+        loss=np.squeeze(loss).item()
         losses.append(loss)
+
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
             break
-        grad = (1/N) * tx.T@(sigmoid(tx@w)-y) 
-        w = w - gamma*grad
+
+        grad = (1/N) * tx.T@(sig-y) 
+        w = w - gamma * grad
 
     return w, loss
 
@@ -169,12 +160,15 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     losses = []
 
     for iter in range(max_iters):
-        # get loss and update w.
-        loss=-(1/N) * np.sum(y * np.log(sigmoid(tx@w)) + (1-y) * np.log(1-sigmoid(tx@w)))
-        loss=loss.item()
-        grad = (1/N) * tx.T@(sigmoid(tx@w)-y) + 2 * lambda_ * w
-        w=w-gamma*grad
+        sig = sigmoid(tx @ w)
+        loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
+        loss=np.squeeze(loss).item()
         losses.append(loss)
+
+        grad = (1/N) * tx.T@(sig-y) + 2 * lambda_ * w
+        w=w-gamma*grad
+        
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
             break
+        
     return w, loss
