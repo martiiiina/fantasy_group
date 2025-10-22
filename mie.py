@@ -27,7 +27,7 @@ def logistic_loss(y, tx, w):
     loss=np.squeeze(loss).item()
     return loss
 
-def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
+def cross_validation(y, x, y_val, x_val, k_indices, k, initial_w, max_iters, gamma, lambda_):
     """return the loss of ridge regression for a fold corresponding to k_indices
 
     Args:
@@ -59,9 +59,9 @@ def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
     #print("Shape after split y_tr: ", y_tr.shape)
 
 
-    w, loss_tr=reg_logistic_regression(y_tr, x_tr, lambda_, initial_w, max_iters, gamma)
+    w, loss_tr, loss_val = reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma)
 
-    return w, loss_tr
+    return w, loss_tr, loss_val
 
 def train_val_split(x, y, val_ratio=0.2, seed=42):
     np.random.seed(seed)
