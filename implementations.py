@@ -124,10 +124,12 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     losses=[]
     threshold=1e-8
 
+    y = y.reshape(-1, 1)  # from (N,) → (N,1)
+
     for iter in range(max_iters):
-        sig = sigmoid(tx @ w)
+        sig = sigmoid(tx@w)
         loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
-        loss=np.squeeze(loss).item()
+        loss = np.squeeze(loss)             # from shape (1,1) → scalar
         losses.append(loss)
 
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
@@ -159,16 +161,19 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     threshold = 1e-8
     losses = []
 
+    y = y.reshape(-1, 1)  # from (N,) → (N,1)
+
+
     for iter in range(max_iters):
         sig = sigmoid(tx @ w)
         loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
-        loss=np.squeeze(loss).item()
+        loss=np.squeeze(loss)
         losses.append(loss)
+
+        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+            break
 
         grad = (1/N) * tx.T@(sig-y) + 2 * lambda_ * w
         w=w-gamma*grad
-        
-        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
-            break
         
     return w, loss

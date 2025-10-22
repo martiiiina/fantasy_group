@@ -1,7 +1,9 @@
 import numpy as np
 
 def sigmoid(t):
+    #print("Sono dentro sigmoid, t.shape: ", t.shape)
     sigma = 1 / (1+np.exp(-t))
+
     return sigma
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):

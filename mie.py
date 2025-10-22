@@ -27,7 +27,7 @@ def logistic_loss(y, tx, w):
     loss=np.squeeze(loss).item()
     return loss
 
-def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma):
+def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
     """return the loss of ridge regression for a fold corresponding to k_indices
 
     Args:
@@ -45,17 +45,20 @@ def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma):
     # and all the other rows as the training indices
 
     te_indice = k_indices[k]
-    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]      # fa lista da 0 a K_fold, == k corrente quindi lista di zeri e un uno per k corrente, invertiti con la tilde
+    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]      # list from 0 to K_fold, == current k, list of zeros and one 1 for current k, inverted with tilde
     
-    # N.B. passando un booleano a k_indices del tipo T T F T T, si fa slicing delle righe di k_indices con indice True
+    # N.B. passing a boolean to k_indices like T T F T T, slicing of rows of k_indices with index True
 
-    tr_indice = tr_indice.reshape(-1)   # trasforma tr_indice da matrice e array 1D
+    tr_indice = tr_indice.reshape(-1)   # trasforms tr_indice from matrix to 1D
 
     y_te = y[te_indice]
     y_tr = y[tr_indice]
-    x_te = x[te_indice]
-    x_tr = x[tr_indice]
+    x_te = x[te_indice, :]
+    x_tr = x[tr_indice, :]
+    #print("Shape after split x_tr: ", x_tr.shape)
+    #print("Shape after split y_tr: ", y_tr.shape)
 
-    w, loss_tr=logistic_regression(y_tr, x_tr, initial_w, max_iters, gamma)
+
+    w, loss_tr=reg_logistic_regression(y_tr, x_tr, lambda_, initial_w, max_iters, gamma)
 
     return w, loss_tr
