@@ -140,7 +140,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
     return w, loss
 
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+def reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma):
     """Do gradient descent, using the penalized logistic regression.
     Return the loss and updated w.
 
@@ -156,24 +156,34 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         loss: scalar number
         w: shape=(D, 1)
     """
-    N = y.shape[0]
+    N = y_tr.shape[0]
     w=initial_w
     threshold = 1e-8
-    losses = []
-
-    y = y.reshape(-1, 1)  # from (N,) → (N,1)
-
+    tr_losses = []
+    val_losses = []
+ 
+    y_tr = y_tr.reshape(-1, 1)  # from (N,) → (N,1)
+    y_val = y_val.reshape(-1, 1)
 
     for iter in range(max_iters):
-        sig = sigmoid(tx @ w)
-        loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
+        sig = sigmoid(x_tr @ w)
+        loss = -(1/N) * (y_tr.T @ np.log(sig) + (1-y_tr).T @ np.log(1-sig))
         loss=np.squeeze(loss)
-        losses.append(loss)
+        tr_losses.append(loss)
 
-        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+        #if len(tr_losses) > 1 and np.abs(tr_losses[-1] - tr_losses[-2]) < threshold:
+        #    break
+
+        sig_val = sigmoid(x_val @ w)
+        N_val = y_val.shape[0]
+        loss_val = -(1 / N_val) * (y_val.T @ np.log(sig_val) + (1 - y_val).T @ np.log(1 - sig_val))
+        loss_val = np.squeeze(loss_val)
+        val_losses.append(loss_val)
+
+        if len(val_losses) > 1 and np.abs(val_losses[-1] - val_losses[-2]) < threshold:
             break
 
-        grad = (1/N) * tx.T@(sig-y) + 2 * lambda_ * w
+        grad = (1/N) * x_tr.T@(sig-y_tr) + 2 * lambda_ * w
         w=w-gamma*grad
         
-    return w, loss
+    return w, tr_losses, val_losses
