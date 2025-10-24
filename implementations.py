@@ -105,7 +105,7 @@ def ridge_regression(y, tx, lambda_):
     mse = 1/(2*N)*e.T@e
     return w, mse
 
-def logistic_regression(y, tx, initial_w, max_iters, gamma):
+def logistic_regression(y, tx, y_val, x_val, initial_w, max_iters, gamma):
     """
     Do gradient descent using logistic regression. Return the final loss and the updated w.
 
@@ -119,26 +119,33 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         loss: scalar number
         w: shape=(D, 1)
     """
-    N = y.shape[0]
     w=initial_w
     losses=[]
+    losses_val=[]
     threshold=1e-8
 
     y = y.reshape(-1, 1)  # from (N,) → (N,1)
 
     for iter in range(max_iters):
         sig = sigmoid(tx@w)
+        N = y.shape[0]
         loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
         loss = np.squeeze(loss)             # from shape (1,1) → scalar
         losses.append(loss)
 
-        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+        sig_val = sigmoid(x_val@w)
+        N=y_val.shape[0]
+        loss_val = -(1/N) * (y_val.T @ np.log(sig_val) + (1-y_val).T @ np.log(1-sig_val))
+        loss_val = np.squeeze(loss_val)             # from shape (1,1) → scalar
+        losses_val.append(loss_val)
+
+        if len(losses_val) > 1 and np.abs(losses_val[-1] - losses_val[-2]) < threshold:
             break
 
         grad = (1/N) * tx.T@(sig-y) 
         w = w - gamma * grad
 
-    return w, loss
+    return w, losses, losses_val
 
 def reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma):
     """Do gradient descent, using the penalized logistic regression.
@@ -165,9 +172,22 @@ def reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_it
     y_tr = y_tr.reshape(-1, 1)  # from (N,) → (N,1)
     y_val = y_val.reshape(-1, 1)
 
+    # calcolo pesi di classe basati sul training set
+    classes, counts = np.unique(y_tr, return_counts=True)
+    K = len(classes)
+    class_weights = {c: N / (K * n) for c, n in zip(classes, counts)}
+
+    # array dei pesi per ogni campione
+    sample_weights_tr = np.array([class_weights[y_i[0]] for y_i in y_tr]).reshape(-1,1)
+    sample_weights_val = np.array([class_weights[y_i[0]] for y_i in y_val]).reshape(-1,1)
+
     for iter in range(max_iters):
         sig = sigmoid(x_tr @ w)
-        loss = -(1/N) * (y_tr.T @ np.log(sig) + (1-y_tr).T @ np.log(1-sig))
+        #loss = -(1/N) * (y_tr.T @ np.log(sig) + (1-y_tr).T @ np.log(1-sig))
+                # cross-entropy pesata + L2
+        loss = -(1/N) * np.sum(sample_weights_tr * (y_tr * np.log(sig + 1e-9) + 
+                                                        (1 - y_tr) * np.log(1 - sig + 1e-9))) \
+                  + lambda_ * np.sum(w**2)
         loss=np.squeeze(loss)
         tr_losses.append(loss)
 
@@ -176,14 +196,20 @@ def reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_it
 
         sig_val = sigmoid(x_val @ w)
         N_val = y_val.shape[0]
-        loss_val = -(1 / N_val) * (y_val.T @ np.log(sig_val) + (1 - y_val).T @ np.log(1 - sig_val))
+        #loss_val = -(1 / N_val) * (y_val.T @ np.log(sig_val) + (1 - y_val).T @ np.log(1 - sig_val))
+        loss_val = -(1/N_val) * np.sum(sample_weights_val * (y_val * np.log(sig_val + 1e-9) + 
+                                                            (1 - y_val) * np.log(1 - sig_val + 1e-9))) \
+                   + lambda_ * np.sum(w**2)
         loss_val = np.squeeze(loss_val)
         val_losses.append(loss_val)
 
         if len(val_losses) > 1 and np.abs(val_losses[-1] - val_losses[-2]) < threshold:
             break
 
-        grad = (1/N) * x_tr.T@(sig-y_tr) + 2 * lambda_ * w
-        w=w-gamma*grad
+        #grad = (1/N) * x_tr.T@(sig-y_tr) + 2 * lambda_ * w
+        # Gradiente pesato + regolarizzazione
+        grad = (1/N) * (x_tr.T @ (sample_weights_tr * (sig - y_tr))) + 2 * lambda_ * w
+
+        w = w - gamma * grad
         
     return w, tr_losses, val_losses
