@@ -1,7 +1,12 @@
 import numpy as np
 
 def accuracy(y_true, y_pred):
-    return np.mean(y_true == y_pred)
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    fp = np.sum((y_true == -1) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == -1))
+    tn = np.sum((y_true == -1) & (y_pred == -1))
+    acc = (tp+tn)/(tp+tn+fp+fn)
+    return acc
 
 def precision(y_true, y_pred):
     tp = np.sum((y_true == 1) & (y_pred == 1))
