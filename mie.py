@@ -37,7 +37,7 @@ def logistic_loss(y, tx, w):
     loss=np.squeeze(loss).item()
     return loss
 
-def subsample_class(x, y, majority_class=-1, target_ratio=7/3, seed=42):
+def subsample_class(x, y, majority_class=0, target_ratio=1.0, seed=42):
     np.random.seed(seed)
     majority_mask = (y == majority_class)
     minority_mask = ~majority_mask
@@ -86,16 +86,10 @@ def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma):
 
     tr_indice = tr_indice.reshape(-1)   # trasforms tr_indice from matrix to 1D
 
-
-    #print("Shape after split x_tr: ", x_tr.shape)
-    #print("Shape after split y_tr: ", y_tr.shape)
-
     y_val = y[val_indice]
     y_tr = y[tr_indice]
     x_val = x[val_indice, :]
     x_tr = x[tr_indice, :]
-
-    #X_bal, y_bal = subsample_class(x_tr, y_tr, target_ratio=7/3)
 
     w, loss_tr, loss_val = logistic_regression(y_tr, x_tr, y_val, x_val, initial_w, max_iters, gamma)
 
