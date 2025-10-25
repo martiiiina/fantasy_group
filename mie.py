@@ -2,6 +2,16 @@ import numpy as np
 from implementations import logistic_regression, reg_logistic_regression
 from common import sigmoid, batch_iter
 
+def split_categorical_continuous(X, threshold=20):
+    categorical_idx = []
+    continuous_idx = []
+    unique_counts = []
+    for i in range(X.shape[1]):
+        count = len(np.unique(X[:, i]))
+        (categorical_idx if count <= threshold else continuous_idx).append(i)
+        unique_counts.append(count)
+    return categorical_idx, continuous_idx, unique_counts
+
 def build_k_indices(y, k_fold, seed):
     """build k indices for k-fold
 

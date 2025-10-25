@@ -119,30 +119,38 @@ def logistic_regression(y, tx, y_val, x_val, initial_w, max_iters, gamma):
         loss: scalar number
         w: shape=(D, 1)
     """
-    w=initial_w
-    losses=[]
-    losses_val=[]
-    threshold=1e-8
+    w = initial_w
+    losses = []
+    losses_val = []
+    threshold = 1e-4
 
-    y = y.reshape(-1, 1)  # from (N,) → (N,1)
+    y = y.reshape(-1, 1)
+    y_val = y_val.reshape(-1, 1)
+    eps = 1e-15  # to prevent log(0)
 
     for iter in range(max_iters):
-        sig = sigmoid(tx@w)
+        # Predictions
+        sig = sigmoid(tx @ w)
+        sig = np.clip(sig, eps, 1 - eps)
         N = y.shape[0]
-        loss = -(1/N) * (y.T @ np.log(sig) + (1-y).T @ np.log(1-sig))
-        loss = np.squeeze(loss)             # from shape (1,1) → scalar
+        loss = -(1/N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
+        loss = np.squeeze(loss)
         losses.append(loss)
 
-        sig_val = sigmoid(x_val@w)
-        N=y_val.shape[0]
-        loss_val = -(1/N) * (y_val.T @ np.log(sig_val) + (1-y_val).T @ np.log(1-sig_val))
-        loss_val = np.squeeze(loss_val)             # from shape (1,1) → scalar
+        # Validation
+        sig_val = sigmoid(x_val @ w)
+        sig_val = np.clip(sig_val, eps, 1 - eps)
+        N_val = y_val.shape[0]
+        loss_val = -(1/N_val) * (y_val.T @ np.log(sig_val) + (1 - y_val).T @ np.log(1 - sig_val))
+        loss_val = np.squeeze(loss_val)
         losses_val.append(loss_val)
 
-        if len(losses_val) > 1 and np.abs(losses_val[-1] - losses_val[-2]) < threshold:
-            break
+        # Early stopping
+        #if len(losses_val) > 1 and np.abs(losses_val[-1] - losses_val[-2]) < threshold:
+        #    break
 
-        grad = (1/N) * tx.T@(sig-y) 
+        # Gradient update
+        grad = (1/N) * tx.T @ (sig - y)
         w = w - gamma * grad
 
     return w, losses, losses_val
