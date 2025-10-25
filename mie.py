@@ -2,6 +2,16 @@ import numpy as np
 from implementations import logistic_regression, reg_logistic_regression
 from common import sigmoid, batch_iter
 
+def split_categorical_continuous(X, threshold=20):
+    categorical_idx = []
+    continuous_idx = []
+    unique_counts = []
+    for i in range(X.shape[1]):
+        count = len(np.unique(X[:, i]))
+        (categorical_idx if count <= threshold else continuous_idx).append(i)
+        unique_counts.append(count)
+    return categorical_idx, continuous_idx, unique_counts
+
 def build_k_indices(y, k_fold, seed):
     """build k indices for k-fold
 
@@ -27,7 +37,7 @@ def logistic_loss(y, tx, w):
     loss=np.squeeze(loss).item()
     return loss
 
-def subsample_class(x, y, majority_class=-1, target_ratio=7/3, seed=42):
+def subsample_class(x, y, majority_class=0, target_ratio=1.0, seed=42):
     np.random.seed(seed)
     majority_mask = (y == majority_class)
     minority_mask = ~majority_mask
@@ -76,16 +86,10 @@ def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma):
 
     tr_indice = tr_indice.reshape(-1)   # trasforms tr_indice from matrix to 1D
 
-
-    #print("Shape after split x_tr: ", x_tr.shape)
-    #print("Shape after split y_tr: ", y_tr.shape)
-
     y_val = y[val_indice]
     y_tr = y[tr_indice]
     x_val = x[val_indice, :]
     x_tr = x[tr_indice, :]
-
-    #X_bal, y_bal = subsample_class(x_tr, y_tr, target_ratio=7/3)
 
     w, loss_tr, loss_val = logistic_regression(y_tr, x_tr, y_val, x_val, initial_w, max_iters, gamma)
 
