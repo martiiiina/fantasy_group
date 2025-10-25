@@ -131,7 +131,7 @@ def logistic_regression(y, tx, y_val, x_val, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         # Predictions
         sig = sigmoid(tx @ w)
-        sig = np.clip(sig, eps, 1 - eps)
+        #sig = np.clip(sig, eps, 1 - eps)
         N = y.shape[0]
         loss = -(1/N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
         loss = np.squeeze(loss)
@@ -139,7 +139,7 @@ def logistic_regression(y, tx, y_val, x_val, initial_w, max_iters, gamma):
 
         # Validation
         sig_val = sigmoid(x_val @ w)
-        sig_val = np.clip(sig_val, eps, 1 - eps)
+        #sig_val = np.clip(sig_val, eps, 1 - eps)
         N_val = y_val.shape[0]
         loss_val = -(1/N_val) * (y_val.T @ np.log(sig_val) + (1 - y_val).T @ np.log(1 - sig_val))
         loss_val = np.squeeze(loss_val)

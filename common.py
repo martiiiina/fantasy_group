@@ -1,8 +1,6 @@
 import numpy as np
 
 def sigmoid(t):
-    # Clip t to avoid overflow in exp
-    t = np.clip(t, -709, 709)   # 709 is the largest number where exp() doesn’t overflow in float64
     sigma = 1 / (1 + np.exp(-t))
     return sigma
 
