@@ -1,19 +1,10 @@
 TO DOs
-Eliminazione NaN -> settare soglia 40% per drop 
-Per mantenere -> sostituire NaN con media 
-Guardare correlazione -> soglia 0.9 modulo
-*controllare codice da chat 
 
-controllare distribuzioni: controllare metriche Q1-media-Q3 prima e dopo undersampling
-Eliminazione NaN -> settare soglia 40% per drop ✅
-Per mantenere -> sostituire NaN con media ✅
-Guardare correlazione -> soglia 0.9 modulo ✅
-    ! chat suggerisce anche di guardare Variance Inflation Factor per check collinearità - modelli lineari sensibili
-    ! valutare dopo training se con soglia 0.8 migliora
-Sbilanciamento classi -> undersampling dei sani giustificando con distribuzione uniforme
-    ! L'undersampling fa fatto solo sul training set, in fase di training
-Normalizzazione z score
-    ! sembra già fatta 
-Guardare outlier -> chat come meglio trattare
-controllare rumore dei dati 
-Feature processing come applicare 
+1. MARTI VARESE: salvare versione del 72.5 
+2. MARTI VARESE: step preprocessing 
+3. CLO: provare diversi valori: soglia NaN, quantili
+3. MARTI BERGAMO: prova a dare significato ai -1 anche su continue
+4. MARTI BERGAMO: sostituire -1 con moda dei categorici
+6. tuning dei parametri del training 
+
+
