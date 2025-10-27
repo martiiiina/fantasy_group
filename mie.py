@@ -62,6 +62,134 @@ def subsample_class(x, y, majority_class=0, target_ratio=1.0, seed=42):
     perm = np.random.permutation(x_balanced.shape[0])
     return x_balanced[perm], y_balanced[perm]
 
+import numpy as np
+
+def subsample_class_methods(X, y, target_ratio=1.0, method="random", n_iter=10):
+    """
+    Bilancia le classi del dataset utilizzando vari metodi di subsampling.
+
+    Parametri
+    ----------
+    X : np.ndarray
+        Matrice delle feature (n_samples, n_features)
+    y : np.ndarray
+        Vettore delle etichette (valori -1 e 1)
+    target_ratio : float
+        Rapporto desiderato tra minoranza e maggioranza (1.0 = bilanciato)
+    method : str
+        Metodo di bilanciamento:
+        - "random"     : sottocampionamento casuale
+        - "cluster"    : sottocampionamento basato su cluster (mini K-means)
+        - "nearmiss"   : sottocampionamento dei punti più vicini alla minoranza
+        - "tomek"      : rimozione dei Tomek Links (data cleaning)
+        - "cnn"        : Condensed Nearest Neighbor (mantiene punti rilevanti)
+    n_iter : int
+        Numero di iterazioni per metodi iterativi (es. cluster, cnn)
+
+    Ritorna
+    -------
+    X_new, y_new : np.ndarray
+        Dati bilanciati secondo il metodo scelto
+    """
+
+    # Separa classi
+    X_pos, X_neg = X[y == 1], X[y == -1]
+    n_pos, n_neg = len(X_pos), len(X_neg)
+
+    # Identifica maggioranza/minoranza
+    if n_pos > n_neg:
+        X_major, y_major, X_minor, y_minor = X_pos, np.ones(n_pos), X_neg, -np.ones(n_neg)
+    else:
+        X_major, y_major, X_minor, y_minor = X_neg, -np.ones(n_neg), X_pos, np.ones(n_pos)
+
+    n_target = int(len(X_minor) * target_ratio)
+    n_target = min(n_target, len(X_major))  # Evita errori
+
+    # === RANDOM UNDERSAMPLING ===
+    if method == "random":
+        idx = np.random.choice(len(X_major), n_target, replace=False)
+        X_major_sel = X_major[idx]
+
+    # === CLUSTER UNDERSAMPLING (mini K-means) ===
+    elif method == "cluster":
+        centroids = X_major[np.random.choice(len(X_major), n_target, replace=False)]
+        for _ in range(n_iter):
+            dist = np.linalg.norm(X_major[:, None] - centroids[None, :], axis=2)
+            closest = np.argmin(dist, axis=1)
+            for j in range(n_target):
+                pts = X_major[closest == j]
+                if len(pts) > 0:
+                    centroids[j] = pts.mean(axis=0)
+        X_major_sel = centroids
+
+    # === NEARMISS UNDERSAMPLING ===
+    elif method == "nearmiss":
+        distances = np.linalg.norm(X_major[:, None] - X_minor[None, :], axis=2)
+        mean_dist = distances.mean(axis=1)
+        idx = np.argsort(mean_dist)[:n_target]
+        X_major_sel = X_major[idx]
+
+    # === TOMEK LINKS CLEANING ===
+    elif method == "tomek":
+        X_new, y_new = _tomek_links(X, y)
+        return X_new, y_new
+
+    # === CONDENSED NEAREST NEIGHBOR ===
+    elif method == "cnn":
+        X_new, y_new = _condensed_nn(X, y, max_iter=n_iter)
+        return X_new, y_new
+
+    else:
+        raise ValueError(f"Metodo '{method}' non riconosciuto. Usa: random, cluster, nearmiss, tomek, cnn.")
+
+    # Combina minoranza + campioni selezionati della maggioranza
+    y_major_sel = np.full(len(X_major_sel), y_major[0])
+    X_new = np.vstack((X_minor, X_major_sel))
+    y_new = np.hstack((y_minor, y_major_sel))
+
+    # Shuffle finale per evitare bias d'ordine
+    idx = np.random.permutation(len(X_new))
+    return X_new[idx], y_new[idx]
+
+
+# === SUPPORT FUNCTIONS ===
+
+def _tomek_links(X, y):
+    """Rimuove i Tomek Links per migliorare la separabilità delle classi."""
+    X_pos, X_neg = X[y == 1], X[y == -1]
+    keep_idx = np.ones(len(X), dtype=bool)
+
+    for i, x_p in enumerate(X_pos):
+        dist = np.linalg.norm(X_neg - x_p, axis=1)
+        j = np.argmin(dist)
+        x_n = X_neg[j]
+        dist2 = np.linalg.norm(X_pos - x_n, axis=1)
+        if np.argmin(dist2) == i:
+            idx_n = np.where((X == x_n).all(axis=1))[0][0]
+            keep_idx[idx_n] = False
+    return X[keep_idx], y[keep_idx]
+
+
+def _condensed_nn(X, y, max_iter=10):
+    """Implementa il Condensed Nearest Neighbor (CNN) per ridurre la ridondanza."""
+    idx = np.random.choice(len(X), size=1)
+    X_store, y_store = X[idx], y[idx]
+
+    for _ in range(max_iter):
+        changed = False
+        for xi, yi in zip(X, y):
+            dist = np.linalg.norm(X_store - xi, axis=1)
+            nearest = np.argmin(dist)
+            if y_store[nearest] != yi:
+                X_store = np.vstack((X_store, xi))
+                y_store = np.hstack((y_store, yi))
+                changed = True
+        if not changed:
+            break
+    return X_store, y_store
+
+
+
 def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma):
     """return the loss of ridge regression for a fold corresponding to k_indices
 
