@@ -96,38 +96,66 @@ def subsample_class_methods(X, y, target_ratio=1.0, method="random", n_iter=10):
     X_pos, X_neg = X[y == 1], X[y == -1]
     n_pos, n_neg = len(X_pos), len(X_neg)
 
+    if n_pos==n_neg:
+        return X, y
+    
     # Identifica maggioranza/minoranza
     if n_pos > n_neg:
         X_major, y_major, X_minor, y_minor = X_pos, np.ones(n_pos), X_neg, -np.ones(n_neg)
+        major_class, minor_class = 1, -1
     else:
         X_major, y_major, X_minor, y_minor = X_neg, -np.ones(n_neg), X_pos, np.ones(n_pos)
+        major_class, minor_class = -1, 1
 
     n_target = int(len(X_minor) * target_ratio)
     n_target = min(n_target, len(X_major))  # Evita errori
+    #n_target_minor = len(X_minor)
+
+    if n_target <= 0:
+        return X, y
 
     # === RANDOM UNDERSAMPLING ===
     if method == "random":
         idx = np.random.choice(len(X_major), n_target, replace=False)
         X_major_sel = X_major[idx]
+        X_minor_sel = X_minor
 
     # === CLUSTER UNDERSAMPLING (mini K-means) ===
     elif method == "cluster":
-        centroids = X_major[np.random.choice(len(X_major), n_target, replace=False)]
-        for _ in range(n_iter):
-            dist = np.linalg.norm(X_major[:, None] - centroids[None, :], axis=2)
-            closest = np.argmin(dist, axis=1)
-            for j in range(n_target):
-                pts = X_major[closest == j]
-                if len(pts) > 0:
-                    centroids[j] = pts.mean(axis=0)
-        X_major_sel = centroids
+        if n_target>0 and len(X_major)>0:
+            centroids = X_major[np.random.choice(len(X_major), n_target, replace=False)]
+            
+            new_centroids = []
+            for _ in range(n_iter):
+                dist = np.linalg.norm(X_major[:, np.newaxis] - centroids, axis=2)
+                closest = np.argmin(dist, axis=1)
+                for j in range(n_target):
+                    pts = X_major[closest == j]
+                    if len(pts) > 0:
+                        new_centroids.append (pts[np.random.randint(0, len(pts))])
+                    else:
+                        new_centroids.append(X_major[np.random.randint(0, len(X_major))])
+                    #centroids[j] = X_major[np.random.randint(0, len(X_major))]
+                centroids = np.array(new_centroids)
+
+            X_major_sel = centroids
+            X_minor_sel = X_minor
+        else:
+            X_major_sel = X_major[:n_target]
+            X_minor_sel = X_minor
+
 
     # === NEARMISS UNDERSAMPLING ===
     elif method == "nearmiss":
-        distances = np.linalg.norm(X_major[:, None] - X_minor[None, :], axis=2)
-        mean_dist = distances.mean(axis=1)
-        idx = np.argsort(mean_dist)[:n_target]
-        X_major_sel = X_major[idx]
+        if len(X_minor) > 0 and len(X_major) > 0:
+            distances = np.linalg.norm(X_major[:, np.newaxis] - X_minor, axis=2)
+            mean_dist = distances.mean(axis=1)
+            idx = np.argsort(mean_dist)[:n_target]
+            X_major_sel = X_major[idx]
+            X_minor_sel = X_minor
+        else:
+            X_major_sel = X_major[:n_target]
+            X_minor_sel = X_minor
 
     # === TOMEK LINKS CLEANING ===
     elif method == "tomek":
@@ -143,14 +171,154 @@ def subsample_class_methods(X, y, target_ratio=1.0, method="random", n_iter=10):
         raise ValueError(f"Metodo '{method}' non riconosciuto. Usa: random, cluster, nearmiss, tomek, cnn.")
 
     # Combina minoranza + campioni selezionati della maggioranza
-    y_major_sel = np.full(len(X_major_sel), y_major[0])
-    X_new = np.vstack((X_minor, X_major_sel))
-    y_new = np.hstack((y_minor, y_major_sel))
+    y_major_sel = np.full(len(X_major_sel), major_class)
+    y_minor_sel = np.full(len(X_minor_sel), minor_class)
+
+    X_new = np.vstack((X_minor_sel, X_major_sel))
+    y_new = np.hstack((y_minor_sel, y_major_sel))
 
     # Shuffle finale per evitare bias d'ordine
     idx = np.random.permutation(len(X_new))
     return X_new[idx], y_new[idx]
 
+#PROVA CON FUNZIONI DI SUPPORTO
+import numpy as np
+
+def subsample_class_methods(X, y, target_ratio=1.0, method="random", n_iter=10, random_state=None):
+    """
+    Bilancia le classi del dataset utilizzando vari metodi di subsampling.
+    """
+    if random_state is not None:
+        np.random.seed(random_state)
+    
+    # Separa classi
+    X_pos, X_neg = X[y == 1], X[y == -1]
+    n_pos, n_neg = len(X_pos), len(X_neg)
+
+    # Se il dataset è già bilanciato, restituisci i dati originali
+    if abs(n_pos - n_neg) <= 1:
+        return X, y
+
+    # Identifica maggioranza/minoranza
+    if n_pos > n_neg:
+        X_major, y_major = X_pos, np.ones(n_pos)
+        X_minor, y_minor = X_neg, -np.ones(n_neg)
+        major_class, minor_class = 1, -1
+    else:
+        X_major, y_major = X_neg, -np.ones(n_neg)
+        X_minor, y_minor = X_pos, np.ones(n_pos)
+        major_class, minor_class = -1, 1
+
+    n_target_major = int(len(X_minor) * target_ratio)
+    n_target_major = min(n_target_major, len(X_major))
+    
+    if n_target_major <= 0:
+        return X, y
+
+    # Applica il metodo di subsampling SOLO alla classe maggioritaria
+    if method == "random":
+        idx = np.random.choice(len(X_major), n_target_major, replace=False)
+        X_major_sel = X_major[idx]
+        
+    elif method == "cluster":
+        X_major_sel = _cluster_undersampling(X_major, n_target_major, n_iter, random_state)
+            
+    elif method == "nearmiss":
+        X_major_sel = _nearmiss_undersampling(X_major, X_minor, n_target_major)
+    
+    elif method == "tomek":
+        return _tomek_links_improved(X, y, random_state)
+    
+    elif method == "cnn":
+        return _condensed_nn_improved(X, y, max_iter=n_iter, random_state=random_state)
+    
+    else:
+        raise ValueError(f"Metodo '{method}' non riconosciuto")
+
+    # Combina mantenendo TUTTI i punti minoritari e solo un sottoinsieme della maggioritaria
+    X_balanced = np.vstack([X_minor, X_major_sel])
+    y_balanced = np.hstack([y_minor, np.full(len(X_major_sel), major_class)])
+    
+    # Shuffle
+    idx = np.random.permutation(len(X_balanced))
+    return X_balanced[idx], y_balanced[idx]
+# === SUPPORT FUNCTIONS FOR SUBSAMPLING METHODS ===
+def _cluster_undersampling(X_major, n_clusters, n_iter=10, random_state=None):
+    """Cluster undersampling senza sklearn"""
+    if random_state is not None:
+        np.random.seed(random_state)
+    
+    n_samples, n_features = X_major.shape
+    
+    # Inizializza centroidi casuali
+    centroids = X_major[np.random.choice(n_samples, n_clusters, replace=False)]
+    
+    for _ in range(n_iter):
+        # Assegna ogni punto al centroide più vicino
+        distances = np.zeros((n_samples, n_clusters))
+        for i in range(n_clusters):
+            distances[:, i] = np.linalg.norm(X_major - centroids[i], axis=1)
+        
+        labels = np.argmin(distances, axis=1)
+        
+        # Aggiorna centroidi
+        new_centroids = []
+        for i in range(n_clusters):
+            cluster_points = X_major[labels == i]
+            if len(cluster_points) > 0:
+                # Seleziona un punto casuale dal cluster come nuovo centroide
+                new_centroids.append(cluster_points[np.random.randint(len(cluster_points))])
+            else:
+                # Se il cluster è vuoto, seleziona un punto casuale
+                new_centroids.append(X_major[np.random.randint(n_samples)])
+        
+        centroids = np.array(new_centroids)
+    
+    # Seleziona il punto più vicino a ciascun centroide finale
+    selected_indices = []
+    for centroid in centroids:
+        distances = np.linalg.norm(X_major - centroid, axis=1)
+        selected_indices.append(np.argmin(distances))
+    
+    return X_major[selected_indices]
+
+def _nearmiss_undersampling(X_major, X_minor, n_target):
+    """NearMiss undersampling senza sklearn"""
+    n_major, n_minor = len(X_major), len(X_minor)
+    
+    # Calcola distanze tra ogni punto maggioritario e tutti i punti minoritari
+    distances = np.zeros((n_major, n_minor))
+    for i in range(n_major):
+        for j in range(n_minor):
+            distances[i, j] = np.linalg.norm(X_major[i] - X_minor[j])
+    
+    # NearMiss-1: seleziona punti maggioritari con distanza media minima verso i minoritari
+    mean_distances = np.mean(distances, axis=1)
+    selected_indices = np.argsort(mean_distances)[:n_target]
+    
+    return X_major[selected_indices]
+
+def _euclidean_distance_matrix(X1, X2):
+    """Calcola matrice delle distanze euclidee"""
+    n1, n2 = len(X1), len(X2)
+    distances = np.zeros((n1, n2))
+    for i in range(n1):
+        for j in range(n2):
+            distances[i, j] = np.linalg.norm(X1[i] - X2[j])
+    return distances
+
+def _find_nearest_neighbors(X, k=1):
+    """Trova i k nearest neighbors per ogni punto"""
+    n_samples = len(X)
+    distances = _euclidean_distance_matrix(X, X)
+    np.fill_diagonal(distances, np.inf)  # Escludi il punto stesso
+    
+    neighbors = []
+    for i in range(n_samples):
+        idx = np.argsort(distances[i])[:k]
+        neighbors.append(idx)
+    
+    return neighbors
 
 # === SUPPORT FUNCTIONS ===
 
