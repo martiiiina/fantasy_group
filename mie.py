@@ -62,7 +62,12 @@ def subsample_class(x, y, majority_class=0, target_ratio=1.0, seed=42):
     perm = np.random.permutation(x_balanced.shape[0])
     return x_balanced[perm], y_balanced[perm]
 
+<<<<<<< HEAD
 def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
+=======
+
+def cross_validation(y, x, k_indices, k, initial_w, initial_m, initial_v, beta1, beta2, batch_size, max_iters, gamma):
+>>>>>>> 5c968434ef807743ebf7b2f087f98bea9a2fbc37
     """return the loss of ridge regression for a fold corresponding to k_indices
 
     Args:
@@ -91,7 +96,11 @@ def cross_validation(y, x, k_indices, k, initial_w, max_iters, gamma, lambda_):
     x_val = x[val_indice, :]
     x_tr = x[tr_indice, :]
 
+<<<<<<< HEAD
     w, loss_tr, loss_val = reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma)
+=======
+    w, loss_tr, loss_val = logistic_regression_with_Adam(y_tr, x_tr, y_val, x_val, initial_w, initial_m, initial_v, beta1, beta2, batch_size, max_iters, gamma)
+>>>>>>> 5c968434ef807743ebf7b2f087f98bea9a2fbc37
 
     return w, loss_tr, loss_val, x_val, y_val
 
@@ -106,6 +115,7 @@ def train_val_split(x, y, val_ratio=0.2, seed=42):
     
     return x[train_idx], y[train_idx], x[val_idx], y[val_idx]
 
+<<<<<<< HEAD
 def build_poly(x, degree):
     """polynomial basis functions for input data x, for j=0 up to j=degree.
 
@@ -126,3 +136,88 @@ def build_poly(x, degree):
     for j in range(d):   
         phi[:,j]=xc[:,0]**j
     return phi
+=======
+def logistic_regression_with_Adam(y, tx, y_val, x_val, initial_w, initial_m, initial_v, beta1, beta2, batch_size, max_iters, gamma):
+    """
+    Do gradient descent using logistic regression. Return the final loss and the updated w.
+
+    Args:
+        y:  shape=(N, 1)
+        tx: shape=(N, D)
+        w:  shape=(D, 1)
+        gamma: float
+
+    Returns:
+        loss: scalar number
+        w: shape=(D, 1)
+    """
+    w = initial_w.reshape(-1,1)
+    m = initial_m.reshape(-1,1)
+    v = initial_v.reshape(-1,1)
+    losses = []
+    losses_val = []
+    threshold = 1e-4
+
+    y = y.reshape(-1, 1)
+    y_val = y_val.reshape(-1, 1)
+    eps = 1e-15  # to prevent log(0)
+    patience=500
+    min_delta=1e-4
+    best_val_loss = np.inf
+    best_weights = w.copy()
+    wait = 0
+
+    grads = []
+    losses_batch=[]
+    losses_val_batch=[]
+    for iter in range(max_iters): 
+        for batch_y, batch_tx in batch_iter(y, tx, batch_size = batch_size, num_batches=23, shuffle=True):            #batch_size = distance between batch elements ; num_batches = number of elements in the batch
+            sig = sigmoid(batch_tx @ w)
+            sig = np.clip(sig, 1e-15, 1 - 1e-15)
+            N = batch_y.shape[0]
+            loss = -(1/N) * (batch_y.T @ np.log(sig) + (1 - batch_y).T @ np.log(1 - sig))
+            loss = np.squeeze(loss)
+            losses_batch.append(loss)
+            grad = (1/N) * batch_tx.T @ (sig - batch_y)
+            grads.append(grad)
+        stoch_grad = np.mean (grads, axis =0)
+        losses.append(np.mean(losses_batch))
+
+        
+            #stoch_grad  = (1/N) * np.dot(batch_tx.T, (sig - batch_y))
+            
+
+        # Validation
+        for batch_y, batch_tx in batch_iter( y_val, x_val, batch_size,num_batches=23, shuffle=True):  
+            sig_val = sigmoid(batch_tx @ w)
+            sig_val = np.clip(sig_val, 1e-15, 1 - 1e-15)
+            N_val = batch_y.shape[0]
+            loss_val = -(1/N_val) * (batch_y.T @ np.log(sig_val) + (1 - batch_y).T @ np.log(1 - sig_val))
+            loss_val = np.squeeze(loss_val)
+            losses_val_batch.append(loss_val)
+        losses_val.append(np.mean(losses_val_batch))
+        t = iter + 1
+        m = beta1*m + (1-beta1)*stoch_grad
+        v = beta2*v + (1-beta2)*stoch_grad**2
+        #w = w - gamma*m/(np.sqrt(v)+eps)
+        #t = iter + 1  # contatore degli step, serve per la bias correction
+
+        m_hat = m / (1 - beta1 ** t)
+        v_hat = v / (1 - beta2 ** t)
+
+        w = w - gamma * m_hat / (np.sqrt(v_hat) + eps)
+        #Early stop
+        #if  losses_val[-1] < best_val_loss - min_delta:
+        #    best_val_loss =  losses_val[-1]
+        #    best_weights = w.copy()
+        #    wait = 0
+        #else:
+        #    wait += 1
+
+        #if wait >= patience:
+        #    print(f"Early stopping at iteration {iter+1}")
+        #    w = best_weights
+        #    break   
+    return w, losses, losses_val
+
+>>>>>>> 5c968434ef807743ebf7b2f087f98bea9a2fbc37

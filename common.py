@@ -4,6 +4,21 @@ def sigmoid(t):
     sigma = 1 / (1 + np.exp(-t))
     return sigma
 
+def batch_iter_1(y, tx, batch_size, shuffle=True):
+    """
+    Generator that yields mini-batches from (y, tx).
+    Shuffles the dataset once per epoch for better stochasticity.
+    """
+    data_size = len(y)
+    indices = np.arange(data_size)
+    if shuffle:
+        np.random.shuffle(indices)
+
+    for start_idx in range(0, data_size, batch_size):
+        end_idx = min(start_idx + batch_size, data_size)
+        excerpt = indices[start_idx:end_idx]
+        yield y[excerpt], tx[excerpt]
+
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
