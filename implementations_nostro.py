@@ -1,4 +1,3 @@
-
 import numpy as np
 from common import batch_iter, sigmoid
 
@@ -18,13 +17,12 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """
     w = initial_w
     for n_iter in range(max_iters):
-        # Loss
-        N = len(y)
-        loss = 1/(2*N) * np.sum((y-np.dot(tx,w))**2)
-        # Gradient
+        # compute gradient and loss
         e = y - np.dot(tx,w)
-        g = - 1/N * (np.dot(tx.T,e))
-        # Update w 
+        g = - 1/len(y) * (np.dot(tx.T,e))
+        N = y.shape[0]
+        loss = 1/(2*N) * np.sum((y-np.dot(tx,w))**2)
+        # update w 
         w=w-gamma*g
 
     return w, loss
@@ -178,7 +176,7 @@ def reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_it
     tr_losses = []
     val_losses = []
  
-    y_tr = y_tr.reshape(-1, 1)  # from (N,) ÔåÆ (N,1)
+    y_tr = y_tr.reshape(-1, 1)  # from (N,) → (N,1)
     y_val = y_val.reshape(-1, 1)
 
     for iter in range(max_iters):
