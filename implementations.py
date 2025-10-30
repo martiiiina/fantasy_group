@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     data_size = len(y)  # NUmber of data points.
     batch_size = min(data_size, batch_size)  # Limit the possible size of the batch.
@@ -44,7 +45,7 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """
     w = initial_w
     N = y.shape[0]
-    loss = 1 / (2*N) * np.sum((y - np.dot(tx, w)) ** 2)
+    loss = 1 / (2 * N) * np.sum((y - np.dot(tx, w)) ** 2)
 
     for n_iter in range(max_iters):
         e = y - np.dot(tx, w)
@@ -53,9 +54,10 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         # Update w
         w = w - gamma * g
         # Loss
-        loss = 1 / (2*N) * np.sum((y - np.dot(tx, w)) ** 2)
+        loss = 1 / (2 * N) * np.sum((y - np.dot(tx, w)) ** 2)
 
     return w, loss
+
 
 def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     """The Stochastic Gradient Descent algorithm (SGD).
@@ -74,12 +76,15 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     N = y.shape[0]
     for n_iter in range(max_iters):
-        for batch_y, batch_tx in batch_iter(y, tx, batch_size=1, num_batches=1, shuffle=False):
-            e = batch_y - batch_tx@w
-            stoch_grad = -batch_tx.T@e / len(e)
+        for batch_y, batch_tx in batch_iter(
+            y, tx, batch_size=1, num_batches=1, shuffle=False
+        ):
+            e = batch_y - batch_tx @ w
+            stoch_grad = -batch_tx.T @ e / len(e)
         w = w - gamma * stoch_grad
-    loss = 1/(2*N) * np.sum( (y - tx@w)** 2 )
+    loss = 1 / (2 * N) * np.sum((y - tx @ w) ** 2)
     return w, loss
+
 
 def least_squares(y, tx):
     """Calculate the least squares solution.
@@ -102,6 +107,7 @@ def least_squares(y, tx):
     mse = 1 / (2 * N) * e.T @ e
 
     return w, mse
+
 
 def ridge_regression(y, tx, lambda_):
     """implement ridge regression.
@@ -129,6 +135,7 @@ def ridge_regression(y, tx, lambda_):
 
 def sigmoid(t):
     return 1.0 / (1 + np.exp(-t))
+
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """
@@ -161,6 +168,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
     return w, loss
 
+
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Do gradient descent, using the penalized logistic regression.
     Return the loss and updated w.
@@ -192,12 +200,13 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 
     return w, loss
 
-y=np.array([0.1, 0.3, 0.5])
-tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
-initial_w=np.array([0.5, 1.0])
-max_iters=2
-gamma=0.1
-lambda_=1
-w,loss=reg_logistic_regression(y,tx,lambda_,initial_w,max_iters,gamma)
+
+y = np.array([0.1, 0.3, 0.5])
+tx = np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
+initial_w = np.array([0.5, 1.0])
+max_iters = 2
+gamma = 0.1
+lambda_ = 1
+w, loss = reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma)
 print(w)
 print(loss)
