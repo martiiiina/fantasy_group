@@ -43,6 +43,8 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         loss: mse, for last iteration
     """
     w = initial_w
+    loss = 0
+
     for n_iter in range(max_iters):
         N = y.shape[0]
         e = y - np.dot(tx, w)
