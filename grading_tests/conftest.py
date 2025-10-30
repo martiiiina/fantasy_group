@@ -1,7 +1,17 @@
 import importlib.machinery
 import pathlib
+from pathlib import Path
 import shutil
 import sys
+# Percorso alla cartella corrente
+p = Path(".")
+
+# Lista dei file nella cartella
+for file in p.iterdir():
+    print(file)
+
+# Creare una sottocartella
+(Path("tmp") / "subdir").mkdir(parents=True, exist_ok=True)
 
 import git  # pip install gitpython
 import pytest
@@ -41,7 +51,7 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session")
-def github_repo_path() -> pathlib.Path:
+def github_repo_path() -> pathlib.Path: # type: ignore
     workdir = pathlib.Path(CLONE_DIRECTORY).resolve()
 
     # Support giving a directory path instead of github link
