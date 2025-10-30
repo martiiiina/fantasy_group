@@ -199,14 +199,3 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
 
     return w, loss
-
-
-y = np.array([0.1, 0.3, 0.5])
-tx = np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
-initial_w = np.array([0.5, 1.0])
-max_iters = 2
-gamma = 0.1
-lambda_ = 1
-w, loss = reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma)
-print(w)
-print(loss)
