@@ -43,10 +43,10 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         loss: mse, for last iteration
     """
     w = initial_w
+    N = y.shape[0]
     loss = 1 / (2*N) * np.sum((y - np.dot(tx, w)) ** 2)
 
     for n_iter in range(max_iters):
-        N = y.shape[0]
         e = y - np.dot(tx, w)
         # Gradient
         g = -1 / N * (np.dot(tx.T, e))
