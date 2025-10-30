@@ -43,18 +43,22 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         losses: a list of length max_iters containing the loss value (scalar) for each iteration of GD
         ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of GD
     """
+    losses=[]
+    ws = [initial_w]
     w = initial_w
     for n_iter in range(max_iters):
-        # Loss
         N = y.shape[0]
-        loss = 1 / (2 * N) * np.sum((y - np.dot(tx, w)) ** 2)
-        # Gradient
         e = y - np.dot(tx, w)
+        # Gradient
         g = -1 / N * (np.dot(tx.T, e))
         # Update w
         w = w - gamma * g
+        ws.append(w)
+        # Loss
+        loss = 1 / (2*N) * np.sum((y - np.dot(tx, w)) ** 2)
+        losses.append(loss)
 
-    return w, loss
+    return ws[-1], losses[-1]
 
 y=np.array([0.1, 0.3, 0.5])
 tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
@@ -62,9 +66,8 @@ initial_w=np.array([0.5, 1.0])
 max_iters=2
 gamma=0.1
 w,loss=mean_squared_error_gd(y, tx, initial_w, max_iters, gamma)
-print(w.shape)
-print(loss.ndim)
-print(initial_w.shape)
+print(w)
+print(loss)
 
 def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     """The Stochastic Gradient Descent algorithm (SGD).

@@ -115,7 +115,6 @@ def test_mean_squared_error_gd_0_step(student_implementations, y, tx):
     assert loss.ndim == 0
     assert w.shape == expected_w.shape
 
-
 def test_mean_squared_error_gd(student_implementations, y, tx, initial_w):
     w, loss = student_implementations.mean_squared_error_gd(
         y, tx, initial_w, MAX_ITERS, GAMMA
