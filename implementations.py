@@ -161,39 +161,43 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
     return w, loss
 
-y=np.array([0.1, 0.3, 0.5])
-tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
-initial_w=np.array([0.5, 1.0])
-max_iters=2
-gamma=0.1
-w,loss=logistic_regression(y,tx,initial_w,max_iters,gamma)
-print(w)
-print(loss)
-
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Do gradient descent, using the penalized logistic regression.
     Return the loss and updated w.
 
     Args:
-        y:  shape=(N, 1)
+        y:  shape=(N,)
         tx: shape=(N, D)
-        w:  shape=(D, 1)
-        gamma: scalar
         lambda_: scalar
+        inirial_w:  shape=(D,)
+        gamma: scalar
         max_iters: scalar
 
     Returns:
+        w: shape=(D,)
         loss: scalar number
-        w: shape=(D, 1)
     """
     N = y.shape[0]
+    y = (y > 0.2) * 1.0
     w = initial_w
+    sig = sigmoid(tx @ w)
+    loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
 
     for iter in range(max_iters):
         sig = sigmoid(tx @ w)
-        loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
-        loss = np.squeeze(loss)
         grad = (1 / N) * tx.T @ (sig - y) + 2 * lambda_ * w
         w = w - gamma * grad
+        sig = sigmoid(tx @ w)
+        loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
 
     return w, loss
+
+y=np.array([0.1, 0.3, 0.5])
+tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
+initial_w=np.array([0.5, 1.0])
+max_iters=2
+gamma=0.1
+lambda_=1
+w,loss=reg_logistic_regression(y,tx,lambda_,initial_w,max_iters,gamma)
+print(w)
+print(loss)
