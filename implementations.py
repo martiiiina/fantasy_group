@@ -103,12 +103,6 @@ def least_squares(y, tx):
 
     return w, mse
 
-y=np.array([0.1, 0.3, 0.5])
-tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
-initial_w=np.array([0.5, 1.0])
-max_iters=2
-gamma=0.1
-
 def ridge_regression(y, tx, lambda_):
     """implement ridge regression.
 
@@ -152,19 +146,29 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """
     w = initial_w
     N = y.shape[0]
+    y = (y > 0.2) * 1.0
+
     sig = sigmoid(tx @ w)
     loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
 
     for iter in range(max_iters):
         # Predictions
         sig = sigmoid(tx @ w)
-        loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
-        loss = np.squeeze(loss)
         # Gradient update
         grad = (1 / N) * tx.T @ (sig - y)
         w = w - gamma * grad
+        sig = sigmoid(tx @ w)
+        loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
     return w, loss
 
+y=np.array([0.1, 0.3, 0.5])
+tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
+initial_w=np.array([0.5, 1.0])
+max_iters=2
+gamma=0.1
+w,loss=logistic_regression(y,tx,initial_w,max_iters,gamma)
+print(w)
+print(loss)
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Do gradient descent, using the penalized logistic regression.
