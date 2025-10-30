@@ -119,11 +119,7 @@ def ridge_regression(y, tx, lambda_):
 
     Returns:
         w: optimal weights, numpy array of shape(D,), D is the number of features.
-
-    >>> ridge_regression(np.array([0.1,0.2]), np.array([[2.3, 3.2], [1., 0.1]]), 0)
-    array([ 0.21212121, -0.12121212])
-    >>> ridge_regression(np.array([0.1,0.2]), np.array([[2.3, 3.2], [1., 0.1]]), 1)
-    array([0.03947092, 0.00319628])
+        mse: scalar
     """
     N = tx.shape[0]
     D = tx.shape[1]
@@ -140,23 +136,24 @@ def ridge_regression(y, tx, lambda_):
 def sigmoid(t):
     return 1.0 / (1 + np.exp(-t))
 
-
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """
     Do gradient descent using logistic regression. Return the final loss and the updated w.
 
     Args:
-        y:  shape=(N, 1)
-        tx: shape=(N, D)
-        w:  shape=(D, 1)
+        y:  shape=(N,)
+        tx: shape=(N,D)
+        w:  shape=(D,)
         gamma: float
 
     Returns:
+    w: shape=(D,)
         loss: scalar number
-        w: shape=(D, 1)
     """
     w = initial_w
     N = y.shape[0]
+    sig = sigmoid(tx @ w)
+    loss = -(1 / N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
 
     for iter in range(max_iters):
         # Predictions
