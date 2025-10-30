@@ -1,6 +1,36 @@
 import numpy as np
 from implementations import logistic_regression, reg_logistic_regression
-from common import sigmoid, batch_iter
+
+def sigmoid(t):
+    return 1.0 / (1 + np.exp(-t))
+
+def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
+    data_size = len(y)  # NUmber of data points.
+    batch_size = min(data_size, batch_size)  # Limit the possible size of the batch.
+    max_batches = int(
+        data_size / batch_size
+    )  # The maximum amount of non-overlapping batches that can be extracted from the data.
+    remainder = (
+        data_size - max_batches * batch_size
+    )  # Points that would be excluded if no overlap is allowed.
+
+    if shuffle:
+        # Generate an array of indexes indicating the start of each batch
+        idxs = np.random.randint(max_batches, size=num_batches) * batch_size
+        if remainder != 0:
+            # Add an random offset to the start of each batch to eventually consider the remainder points
+            idxs += np.random.randint(remainder + 1, size=num_batches)
+    else:
+        # If no shuffle is done, the array of indexes is circular.
+        idxs = np.array([i % max_batches for i in range(num_batches)]) * batch_size
+
+    for start in idxs:
+        start_index = start  # The first data point of the batch
+        end_index = (
+            start_index + batch_size
+        )  # The first data point of the following batch
+        yield y[start_index:end_index], tx[start_index:end_index]
+
 
 def split_categorical_continuous(X, threshold=20):
     categorical_idx = []
@@ -133,30 +163,29 @@ def logistic_regression_with_Adam(y, tx, y_val, x_val, initial_w, initial_m, ini
     eps = 1e-15  # to prevent log(0)
 
     grads = []
-    losses_batch=[]
-    losses_val_batch=[]
     for iter in range(max_iters): 
         for batch_y, batch_tx in batch_iter(y, tx, batch_size = batch_size, num_batches=num_batches, shuffle=True):            #batch_size = distance between batch elements ; num_batches = number of elements in the batch
             sig = sigmoid(batch_tx @ w)
             sig = np.clip(sig, 1e-15, 1 - 1e-15)
             N = batch_y.shape[0]
-            loss = -(1/N) * (batch_y.T @ np.log(sig) + (1 - batch_y).T @ np.log(1 - sig))
-            loss = np.squeeze(loss)
-            losses_batch.append(loss)
             grad = (1/N) * batch_tx.T @ (sig - batch_y)
             grads.append(grad)
         stoch_grad = np.mean (grads, axis =0)
-        losses.append(np.mean(losses_batch))
+        N = y.shape[0]
+        sig = sigmoid(tx @ w)
+        sig = np.clip(sig, 1e-15, 1 - 1e-15)
+        loss = -(1/N) * (y.T @ np.log(sig) + (1 - y).T @ np.log(1 - sig))
+        loss = np.squeeze(loss)
+        losses.append(loss)
 
         # Validation
-        for batch_y, batch_tx in batch_iter( y_val, x_val, batch_size,num_batches=num_batches, shuffle=True):  
-            sig_val = sigmoid(batch_tx @ w)
-            sig_val = np.clip(sig_val, 1e-15, 1 - 1e-15)
-            N_val = batch_y.shape[0]
-            loss_val = -(1/N_val) * (batch_y.T @ np.log(sig_val) + (1 - batch_y).T @ np.log(1 - sig_val))
-            loss_val = np.squeeze(loss_val)
-            losses_val_batch.append(loss_val)
-        losses_val.append(np.mean(losses_val_batch))
+        sig_val = sigmoid(x_val @ w)
+        sig_val = np.clip(sig_val, 1e-15, 1 - 1e-15)
+        N_val = y_val.shape[0]
+        loss_val = -(1/N_val) * (y_val.T @ np.log(sig_val) + (1 - y_val).T @ np.log(1 - sig_val))
+        loss_val = np.squeeze(loss_val)
+        losses_val.append(loss_val)
+        
         t = iter + 1
         m = beta1*m + (1-beta1)*stoch_grad
         v = beta2*v + (1-beta2)*stoch_grad**2
