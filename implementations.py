@@ -57,7 +57,7 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     return w, loss
 
 
-def mean_squared_error_sgd(y, tx, initial_w, batch_size, max_iters, gamma=0.1):
+def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     """The Stochastic Gradient Descent algorithm (SGD).
 
     Args:
@@ -75,7 +75,7 @@ def mean_squared_error_sgd(y, tx, initial_w, batch_size, max_iters, gamma=0.1):
     w = initial_w
     for n_iter in range(max_iters):
         for batch_y, batch_tx in batch_iter(
-            y, tx, batch_size, num_batches=1, shuffle=True
+            y, tx, batch_size=1, num_batches=1, shuffle=True
         ):  # batch_size = distance between batch elements ; num_batches = number of elements in the batch
             e = batch_y - np.dot(batch_tx, w)
             stoch_grad = -np.dot(batch_tx.T, e)
