@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     data_size = len(y)  # NUmber of data points.
     batch_size = min(data_size, batch_size)  # Limit the possible size of the batch.
@@ -30,21 +29,6 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
 
 
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
-    """The Gradient Descent (GD) algorithm.
-
-    Args:
-        y: shape=(N, )
-        tx: shape=(N,2)
-        initial_w: shape=(2, ). The initial guess (or the initialization) for the model parameters
-        max_iters: a scalar denoting the total number of iterations of GD
-        gamma: a scalar denoting the stepsize
-
-    Returns:
-        losses: a list of length max_iters containing the loss value (scalar) for each iteration of GD
-        ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of GD
-    """
-    losses=[]
-    ws = [initial_w]
     w = initial_w
     for n_iter in range(max_iters):
         N = y.shape[0]
@@ -53,67 +37,23 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         g = -1 / N * (np.dot(tx.T, e))
         # Update w
         w = w - gamma * g
-        ws.append(w)
         # Loss
         loss = 1 / (2*N) * np.sum((y - np.dot(tx, w)) ** 2)
-        losses.append(loss)
-
-    return ws[-1], losses[-1]
-
-y=np.array([0.1, 0.3, 0.5])
-tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
-initial_w=np.array([0.5, 1.0])
-max_iters=2
-gamma=0.1
-w,loss=mean_squared_error_gd(y, tx, initial_w, max_iters, gamma)
-print(w)
-print(loss)
-
-def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
-    """The Stochastic Gradient Descent algorithm (SGD).
-
-    Args:
-        y: shape=(N, )
-        tx: shape=(N,2)
-        initial_w: shape=(2, ). The initial guess (or the initialization) for the model parameters
-        batch_size: a scalar denoting the number of data points in a mini-batch used for computing the stochastic gradient
-        max_iters: a scalar denoting the total number of iterations of SGD
-        gamma: a scalar denoting the stepsize
-
-    Returns:
-        losses: a list of length max_iters containing the loss value (scalar) for each iteration of SGD
-        ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of SGD
-    """
-    w = initial_w
-    for n_iter in range(max_iters):
-        for batch_y, batch_tx in batch_iter(
-            y, tx, batch_size=1, num_batches=1, shuffle=True
-        ):  # batch_size = distance between batch elements ; num_batches = number of elements in the batch
-            e = batch_y - np.dot(batch_tx, w)
-            stoch_grad = -np.dot(batch_tx.T, e)
-
-        loss = (y - np.dot(tx, w)) ** 2
-        w = w - gamma * stoch_grad
 
     return w, loss
 
+def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
+    w = initial_w
+    N = y.shape[0]
+    for n_iter in range(max_iters):
+        for batch_y, batch_tx in batch_iter(y, tx, batch_size=1, num_batches=1, shuffle=False):
+            e = batch_y - batch_tx@w
+            stoch_grad = -batch_tx.T@e / len(e)
+        w = w - gamma * stoch_grad
+    loss = 1/(2*N) * np.sum( (y - tx@w)** 2 )
+    return w, loss
 
 def least_squares(y, tx):
-    """Calculate the least squares solution.
-       returns mse, and optimal weights.
-
-    Args:
-        y: numpy array of shape (N,), N is the number of samples.
-        tx: numpy array of shape (N,D), D is the number of features.
-
-    Returns:
-        w: optimal weights, numpy array of shape(D,), D is the number of features.
-        mse: scalar.
-
-    >>> least_squares(np.array([0.1,0.2]), np.array([[2.3, 3.2], [1., 0.1]]))
-    (array([ 0.21212121, -0.12121212]), 8.666684749742561e-33)
-    """
-    # least squares
     A = tx.T @ tx
     b = tx.T @ y
     w = np.linalg.solve(A, b)
@@ -124,6 +64,11 @@ def least_squares(y, tx):
 
     return w, mse
 
+y=np.array([0.1, 0.3, 0.5])
+tx=np.array([[2.3, 3.2], [1.0, 0.1], [1.4, 2.3]])
+initial_w=np.array([0.5, 1.0])
+max_iters=2
+gamma=0.1
 
 def ridge_regression(y, tx, lambda_):
     """implement ridge regression.
