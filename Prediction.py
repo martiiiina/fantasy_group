@@ -11,7 +11,7 @@ def main():
     # Inference
     y_pred_prob = sigmoid(x_test @ w_best)
     y_pred = np.where(y_pred_prob >= 0.5, 1, -1)
-    create_csv_submission(test_ids, y_pred, 'Train_def')
+    create_csv_submission(test_ids, y_pred, 'Train_adam')
 
 if __name__ == "__main__":
     main()

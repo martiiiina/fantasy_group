@@ -237,7 +237,8 @@ def subsample_class(x, y, majority_class=0, target_ratio=1.0, seed=42):
     return x_balanced[perm], y_balanced[perm]
 
 
-def cross_validation(y,x,k_indices,k,initial_w,max_iters,gamma,lambda_):
+def cross_validation(y,x,k_indices,k,initial_w,initial_m,initial_v,beta1,beta2,
+                                  batch_size,num_batches,max_iters,gamma):
     """
     Performs cross validation on x
     At every k-th iteration it selects the k-th row of k_indices as the test indices,
@@ -254,7 +255,8 @@ def cross_validation(y,x,k_indices,k,initial_w,max_iters,gamma,lambda_):
     x_val = x[val_indice, :]
     x_tr = x[tr_indice, :]
 
-    w, loss_tr, loss_val = reg_logistic_regression(y_tr, x_tr, y_val, x_val, lambda_, initial_w, max_iters, gamma)
+    w, loss_tr, loss_val = logistic_regression_with_Adam(y_tr,x_tr,y_val,x_val,initial_w,initial_m,initial_v,beta1,beta2,
+                                  batch_size,num_batches,max_iters,gamma)
 
     return w, loss_tr, loss_val
 
@@ -274,8 +276,8 @@ def logistic_regression_with_Adam(y,tx,y_val,x_val,initial_w,initial_m,initial_v
     y_val = y_val.reshape(-1, 1)
     eps = 1e-15  # to prevent log(0)
 
-    grads = []
     for iter in range(max_iters):
+        grads = []
         for batch_y, batch_tx in batch_iter(
             y, tx, batch_size=batch_size, num_batches=num_batches, shuffle=True):  
             sig = sigmoid(batch_tx @ w)

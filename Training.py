@@ -26,14 +26,20 @@ def main():
     loss_val=[]
     ws=[]
     initial_w = np.zeros((x_train.shape[1], 1))
+    initial_m = np.zeros((x_train.shape[1], 1))
+    initial_v = np.zeros((x_train.shape[1], 1))
     
     # Hyperparameters
     max_iters=3000
-    gamma=0.1
-    lambda_=0
+    gamma=0.0001
+    beta1=0.95
+    beta2=0.999
+    batch_size=64
+    num_batches=50
 
     for k in range(k_fold):
-        w, loss_tr_tmp, loss_val_tmp = cross_validation(y_train,x_train,k_indices,k,initial_w,max_iters,gamma,lambda_)
+        w, loss_tr_tmp, loss_val_tmp = cross_validation(y_train,x_train,k_indices,k,initial_w,initial_m,initial_v,beta1,beta2,
+                                  batch_size,num_batches,max_iters,gamma)
         best_val_loss = np.min(loss_val_tmp)
         loss_val.append(best_val_loss)
         ws.append(w)
