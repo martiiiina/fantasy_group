@@ -8,3 +8,52 @@ TO DOs
 6. tuning dei parametri del training 
 
 
+SCALETTA REPORT: 
+=> introduction
+	- goal of the study 
+	- “environment” of study -> database
+	- means: ml model of label prediction 
+
+=> EDA: analyze the features in a EDA step: (tentativo, cosa non è andato, perché quella è la versione migliore)
+	- type of variables (from now on treating them differently)
+	- outliers and non meaningful values -> non relevant values for the analysis corresponding to “I don’t know”/ “do not want to answer” 
+		- threshold set to 0.95 -> removing too much or too little information 
+		- substitute with nan 
+	-  nan ratio -> do not contain useful information
+		threshold 40% - less keeps too little info while 50% too much noise 
+		per le features che rimangono:
+			nan continue => mediana
+			nan categoriche => -1 
+				also tried with mode but errors, more meaningful with -1 
+	- cross correlation -> features highly correlated between them -> redundant 
+		empirically 0.9 
+	- correlation with output -> keep only features related to the output we want to predict 
+		threshold 
+	- denoised => removing too many features and loosing too much information 
+		denoising step off when training the model 
+	- OHE -> variables are encoded in 1 and 0 to simplify -> one features becomes different features with only 1 1 and all the other variables to 0 corresponding to the desired feature
+		feature engineering 
+	- z score normalization
+	- printing distribution of classes => see if balanced or not 
+
+=> training pipeline 
+	- subsampling -> unbalanced class 
+	- cross validation with 5 folds 
+		- logistic regression -> tuning hyperparameters 
+			best result: gamma = 0.2/ 
+			0.3 andava in overfitting -> worse f1 score 
+		- regularized logistic regression 
+		*Adam instead of sgd -> momentum and 
+		- tuning hyperparameters 
+		- visualizing the losses (validation and training)
+
+	- final threshold 0.5 instead of 0.35 due to unbalanced…
+*overfitting and underfitting and meaning of f1 and accuracy in our trainings 
+
+=> conclusion:
+	- best model has parameters: => highlighted findings: when removing too much information, when overfitting etc 
+	(reproducibility should be included when describing all the different trials)
+    - changes that impacted the most on the results of our model: 
+        denoising off - rimuove troppe features 
+        one hot encoding 
+	- accuracy and f1 scores
